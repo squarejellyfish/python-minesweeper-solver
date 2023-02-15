@@ -376,7 +376,7 @@ class Solver():
             for safe in safes:
                 self.clean_list.append(safe)
 
-    @dump
+    # @dump
     def init_cluster_CSP(self):
 
         try:
@@ -445,7 +445,7 @@ class Solver():
         #         file.write(f'{cluster.constraint=}\n')
         #         for cell in cluster.get_cells():
         #             file.write(f'{cell.position}\n')
-    @dump
+    # @dump
     def search_cluster_CSP(self):
 
         def search(current_comb: list, position):
@@ -492,7 +492,7 @@ class Solver():
 
         chosen_cluster = min(self.clusters, key=attrgetter('weight'))
         print(len(chosen_cluster.get_cells()))
-        if len(chosen_cluster.get_cells()) > 15:
+        if len(chosen_cluster.get_cells()) > 12:
             return None
 
         cells_pos = {cell: pos for pos, cell in enumerate(
@@ -528,18 +528,18 @@ class Solver():
                     mines_in_solution += 1
 
             if mines_in_solution == 0:
-                with open('output.log', 'a') as file:
-                    col = (cell.position[0]-self.origin[0]) // 20 + 1
-                    row = (cell.position[1]-self.origin[1]) // 20 + 1
-                    file.write(
-                        f'[CLUSTER] Appended {(col, row)} to clean list.\n')
+                # with open('output.log', 'a') as file:
+                #     col = (cell.position[0]-self.origin[0]) // 20 + 1
+                #     row = (cell.position[1]-self.origin[1]) // 20 + 1
+                #     file.write(
+                #         f'[CLUSTER] Appended {(col, row)} to clean list.\n')
                 self.clean_list.append(cell)
             elif mines_in_solution == len(self.cluster_solutions):
-                with open('output.log', 'a') as file:
-                    col = (cell.position[0]-self.origin[0]) // 20 + 1
-                    row = (cell.position[1]-self.origin[1]) // 20 + 1
-                    file.write(
-                        f'[CLUSTER] Appended {(col, row)} to mark list.\n')
+                # with open('output.log', 'a') as file:
+                #     col = (cell.position[0]-self.origin[0]) // 20 + 1
+                #     row = (cell.position[1]-self.origin[1]) // 20 + 1
+                #     file.write(
+                #         f'[CLUSTER] Appended {(col, row)} to mark list.\n')
                 self.mark_list.append(cell)
 
     def generate_bruteforce(self):
@@ -581,14 +581,14 @@ class Solver():
                     mines_in_solution += 1
 
             if mines_in_solution == 0:
-                with open('output.log', 'a') as file:
-                    file.write(
-                        f'[BRUTEFORCE] Appended {cell.position} to clean list.\n')
+                # with open('output.log', 'a') as file:
+                #     file.write(
+                #         f'[BRUTEFORCE] Appended {cell.position} to clean list.\n')
                 self.clean_list.append(cell)
             elif mines_in_solution == len(self.bruteforce_solutions):
-                with open('output.log', 'a') as file:
-                    file.write(
-                        f'[BRUTEFORCE] Appended {cell.position} to mark list.\n')
+                # with open('output.log', 'a') as file:
+                #     file.write(
+                #         f'[BRUTEFORCE] Appended {cell.position} to mark list.\n')
                 self.mark_list.append(cell)
 
     @timing
