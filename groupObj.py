@@ -1,6 +1,6 @@
 class Group:
 
-    def __init__(self, cells=list, mines=int, type="exactly") -> None:
+    def __init__(self, cells: list, mines: int, type="exactly") -> None:
         self.cells = set(cells)
         self.mines = mines
         self.type = type
@@ -28,9 +28,19 @@ class Group:
 
 class Cluster(Group):
 
-    def __init__(self, cells=list, mines=int) -> None:
+    def __init__(self, cells: list, constraint: int) -> None:
         self.cells = set(cells)
-        self.mines = mines
+        self.constraint = constraint
+        self.groups = []
 
     def contains(self, cell: object) -> bool:
         return (cell in self.cells)
+
+    def add(self, cells=list):
+        self.cells.append(cells)
+
+    def add_constraint(self, constraint):
+        self.constraint += constraint
+
+    def add_group(self, group: Group):
+        self.groups.append(group)

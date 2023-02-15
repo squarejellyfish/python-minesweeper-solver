@@ -4,7 +4,7 @@ import pyautogui
 import numpy as np
 import tile
 import cv2 as cv
-from groupObj import Group
+from groupObj import Group, Cluster
 from math import floor
 from PIL import ImageGrab
 import random
@@ -377,17 +377,36 @@ class Solver():
     @dump
     def init_cluster_CSP(self):
 
-        cluster = []
+        first_group_cells = list(self.groups[0].cells)
+        first_constraint = self.groups[0].mines
+        # Set cluster with a default of first group
+        clusters = [Cluster(first_group_cells, first_constraint)]
         for group in self.groups:
+
+            if group == self.groups[0]:
+                continue
+
             for cell in group.cells:
-                if cell not in cluster:
-                    cluster.append(cell)
+                added = False
+                for cluster in clusters:
+                    if cluster.contains(cell):
+                        added = True
+                        cells = list(group.cells)
+                        cluster.add(cells)
+                        break
+                if added:
+                    cluster.add_constraint(group.mines)
+                    cluster.add_group(group)
+                    break
+            else:  # means this is an alone group
+                new = Cluster(list(group.cells), group.mines)
+                clusters.append(new)
 
-        if len(cluster) > 12 or len(self.covered_list) > 50:
-            self.cluster = []
-            return
+        # if len(clusters) > 12 or len(self.covered_list) > 50:
+        #     self.cluster = []
+        #     return
 
-        cells_pos = {cell: pos for pos, cell in enumerate(cluster)}
+        cells_pos = {cell: pos for pos, cell in enumerate(clusters)}
 
         def search(current_comb: list, position):
 
@@ -432,10 +451,10 @@ class Solver():
                         search(curr_comb, pos+1)
 
         result = set()
-        default = [False for _ in range(len(cluster))]
+        default = [False for _ in range(len(clusters))]
         search(default, 0)
         self.cluster_solutions = list(result)
-        self.cluster = cluster
+        self.cluster = clusters
 
     # Not sure yet
     def do_cluster_CSP(self):
