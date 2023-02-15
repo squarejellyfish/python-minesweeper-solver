@@ -13,6 +13,7 @@ import time
 import argparse
 import keyboard
 import logging
+from operator import attrgetter
 
 pyautogui.PAUSE = 0.001
 
@@ -105,6 +106,7 @@ class Solver():
 
     def defineBoard(self):
         origin = pyautogui.locateOnScreen("covered.png", confidence=0.97)
+        self.origin = origin
         return origin
 
     def detectNumber(self, RGB):
@@ -377,10 +379,16 @@ class Solver():
     @dump
     def init_cluster_CSP(self):
 
-        first_group_cells = list(self.groups[0].cells)
-        first_constraint = self.groups[0].mines
+        try:
+            first_group_cells = list(self.groups[0].cells)
+            first_constraint = self.groups[0].mines
+        except IndexError:  # no group
+            self.clusters = []
+            return
         # Set cluster with a default of first group
-        clusters = [Cluster(first_group_cells, first_constraint)]
+        first = Cluster(first_group_cells, first_constraint)
+        first.add_group(self.groups[0])
+        clusters = [first]
         for group in self.groups:
 
             if group == self.groups[0]:
@@ -405,6 +413,7 @@ class Solver():
                         break
                 else:  # means this is an alone group
                     new = Cluster(list(group.cells), group.mines)
+                    new.add_group(group)
                     clusters.append(new)
 
         self.clusters = clusters
@@ -429,20 +438,20 @@ class Solver():
         for item in remove_list:
             self.clusters.remove(item)
 
-        with open('output.log', 'a') as file:
-            for cluster in self.clusters:
-                file.write(f'{cluster=}\n')
-                file.write(f'{len(cluster.get_cells())=}\n')
-                file.write(f'{cluster.constraint=}\n')
-                for cell in cluster.get_cells():
-                    file.write(f'{cell.position}\n')
-
+        # with open('output.log', 'a') as file:
+        #     for cluster in self.clusters:
+        #         file.write(f'{cluster=}\n')
+        #         file.write(f'{len(cluster.get_cells())=}\n')
+        #         file.write(f'{cluster.constraint=}\n')
+        #         for cell in cluster.get_cells():
+        #             file.write(f'{cell.position}\n')
+    @dump
     def search_cluster_CSP(self):
 
         def search(current_comb: list, position):
 
             # When it's already a valid solution
-            for group in self.groups:
+            for group in chosen_cluster.groups:
                 count = 0
                 for cell in group.cells:
                     if current_comb[cells_pos[cell]]:
@@ -451,7 +460,7 @@ class Solver():
                 if count != group.mines:
                     break
             else:
-                if current_comb.count(True) <= self.remaining:
+                if current_comb.count(True) <= self.remaining and current_comb.count(True) != 0:
                     result.add(tuple(current_comb))
                     return
 
@@ -463,7 +472,7 @@ class Solver():
                 if not item:
                     curr_comb = current_comb.copy()
                     curr_comb[pos] = True
-                    for group in self.groups:
+                    for group in chosen_cluster.groups:
 
                         for cell in group.cells:
                             if cells_pos[cell] <= pos:
@@ -481,45 +490,57 @@ class Solver():
                     else:
                         search(curr_comb, pos+1)
 
-        cells_pos = {cell: pos for cluster in self.clusters for pos,
-                     cell in enumerate(cluster)}
+        chosen_cluster = min(self.clusters, key=attrgetter('weight'))
+        print(len(chosen_cluster.get_cells()))
+        if len(chosen_cluster.get_cells()) > 15:
+            return None
+
+        cells_pos = {cell: pos for pos, cell in enumerate(
+            chosen_cluster.get_cells())}
 
         result = set()
-        default = [False for _ in range(len(clusters))]
+        default = [False for _ in range(len(chosen_cluster.get_cells()))]
         search(default, 0)
         self.cluster_solutions = list(result)
-        self.cluster = clusters
+        return chosen_cluster
+        # self.cluster = clusters
 
     # Not sure yet
-
     def do_cluster_CSP(self):
 
         self.init_cluster_CSP()
+        if not self.clusters:
+            return
 
-        # if not self.clusters:
-        #     return
+        chosen_cluster = self.search_cluster_CSP()
+        if chosen_cluster == None:
+            return
 
         # with open('output.log', 'a') as file:
-        #     file.write(f'{len(self.cluster)=}\n')
+        #     file.write(f'{len(chosen_cluster.get_cells())=}\n')
         #     file.write(f'{self.cluster_solutions=}\n')
 
-        # for pos, cell in enumerate(self.cluster):
+        for pos, cell in enumerate(chosen_cluster.get_cells()):
 
-        #     mines_in_solution = 0
-        #     for sol in self.cluster_solutions:
-        #         if sol[pos]:
-        #             mines_in_solution += 1
+            mines_in_solution = 0
+            for sol in self.cluster_solutions:
+                if sol[pos]:
+                    mines_in_solution += 1
 
-        #     if mines_in_solution == 0:
-        #         with open('output.log', 'a') as file:
-        #             file.write(
-        #                 f'[CLUSTER] Appended {cell.position} to clean list.\n')
-        #         self.clean_list.append(cell)
-        #     elif mines_in_solution == len(self.cluster_solutions):
-        #         with open('output.log', 'a') as file:
-        #             file.write(
-        #                 f'[CLUSTER] Appended {cell.position} to mark list.\n')
-        #         self.mark_list.append(cell)
+            if mines_in_solution == 0:
+                with open('output.log', 'a') as file:
+                    col = (cell.position[0]-self.origin[0]) // 20 + 1
+                    row = (cell.position[1]-self.origin[1]) // 20 + 1
+                    file.write(
+                        f'[CLUSTER] Appended {(col, row)} to clean list.\n')
+                self.clean_list.append(cell)
+            elif mines_in_solution == len(self.cluster_solutions):
+                with open('output.log', 'a') as file:
+                    col = (cell.position[0]-self.origin[0]) // 20 + 1
+                    row = (cell.position[1]-self.origin[1]) // 20 + 1
+                    file.write(
+                        f'[CLUSTER] Appended {(col, row)} to mark list.\n')
+                self.mark_list.append(cell)
 
     def generate_bruteforce(self):
 

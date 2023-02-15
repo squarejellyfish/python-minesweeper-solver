@@ -32,6 +32,8 @@ class Cluster(Group):
         self.cells = set(cells)
         self.constraint = constraint
         self.groups = []
+        self.length = len(cells)
+        self.weight = self.length / self.constraint
 
     def __hash__(self) -> int:
 
