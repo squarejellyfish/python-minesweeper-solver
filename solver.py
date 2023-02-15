@@ -375,7 +375,7 @@ class Solver():
                 self.clean_list.append(safe)
 
     @dump
-    def generate_CSP(self):
+    def init_cluster_CSP(self):
 
         cluster = []
         for group in self.groups:
@@ -438,9 +438,9 @@ class Solver():
         self.cluster = cluster
 
     # Not sure yet
-    def do_CSP(self):
+    def do_cluster_CSP(self):
 
-        self.generate_CSP()
+        self.init_cluster_CSP()
 
         if not self.cluster:
             return
@@ -536,7 +536,7 @@ class Solver():
         self.doSubGroup()
 
         if not self.clean_list and not self.mark_list:
-            self.do_CSP()
+            self.do_cluster_CSP()
         if not self.clean_list and not self.mark_list:
             self.do_bruteforce()
         #     self.doDeduceRemain()
