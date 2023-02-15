@@ -24,3 +24,13 @@ class Group:
         cells = self.cells.copy()
         cells.remove(cell)
         return cells
+
+
+class Cluster(Group):
+
+    def __init__(self, cells=list, mines=int) -> None:
+        self.cells = set(cells)
+        self.mines = mines
+
+    def contains(self, cell: object) -> bool:
+        return (cell in self.cells)

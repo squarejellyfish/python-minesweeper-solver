@@ -375,12 +375,23 @@ class Solver():
                 self.clean_list.append(safe)
 
     @dump
-    def generate_cluster(self, cluster: list):
+    def generate_CSP(self):
+
+        cluster = []
+        for group in self.groups:
+            for cell in group.cells:
+                if cell not in cluster:
+                    cluster.append(cell)
+
+        if len(cluster) > 12 or len(self.covered_list) > 50:
+            self.cluster = []
+            return
 
         cells_pos = {cell: pos for pos, cell in enumerate(cluster)}
 
         def search(current_comb: list, position):
 
+            # When it's already a valid solution
             for group in self.groups:
                 count = 0
                 for cell in group.cells:
@@ -397,7 +408,6 @@ class Solver():
             if position == len(current_comb):
                 # result.add(tuple(current_comb))
                 return
-            # At the middle but solution is already completed
 
             for pos, item in enumerate(current_comb):
                 if not item:
@@ -428,21 +438,15 @@ class Solver():
         self.cluster = cluster
 
     # Not sure yet
-    def do_cluster(self):
+    def do_CSP(self):
 
-        cluster = []
-        for group in self.groups:
-            for cell in group.cells:
-                if cell not in cluster:
-                    cluster.append(cell)
+        self.generate_CSP()
 
-        if len(cluster) > 15 or len(self.covered_list) > 50:
+        if not self.cluster:
             return
 
-        self.generate_cluster(cluster)
-
         with open('output.log', 'a') as file:
-            file.write(f'{len(cluster)=}\n')
+            file.write(f'{len(self.cluster)=}\n')
             file.write(f'{self.cluster_solutions=}\n')
 
         for pos, cell in enumerate(self.cluster):
@@ -486,7 +490,7 @@ class Solver():
 
         self.bruteforce_solutions = filtered
 
-    @dump
+    # @dump
     def do_bruteforce(self):
 
         if len(self.covered_list) > 25 or math.comb(len(self.covered_list), self.remaining) > 3060:
@@ -532,7 +536,7 @@ class Solver():
         self.doSubGroup()
 
         if not self.clean_list and not self.mark_list:
-            self.do_cluster()
+            self.do_CSP()
         if not self.clean_list and not self.mark_list:
             self.do_bruteforce()
         #     self.doDeduceRemain()
@@ -661,6 +665,7 @@ def solveNTimes(mode, N):
 
     dead_count = 0
     complete_count = 0
+    error_count = 0
     for i in range(N):
 
         solver = Solver(mode=mode)
@@ -671,7 +676,8 @@ def solveNTimes(mode, N):
                 print('\x1b[H', end="")
                 print(f"Solving game {i+1}/{N}.")
                 print(f"Wins: {complete_count}")
-                print(f"Losts: {dead_count}")
+                print(f"Loses: {dead_count}")
+                print(f"Errors: {error_count}")
                 solver.fastReadBoard(origin)
                 if solver.isDead:
                     dead_count += 1
@@ -691,6 +697,9 @@ def solveNTimes(mode, N):
                 print('Game is stopped.')
                 print_result()
                 sys.exit()
+            except TypeError:
+                error_count += 1
+                break
         solver.restart()
         time.sleep(0.1)
 
