@@ -33,14 +33,33 @@ class Cluster(Group):
         self.constraint = constraint
         self.groups = []
 
+    def __hash__(self) -> int:
+
+        return hash((self.cells, self.constraint))
+
     def contains(self, cell: object) -> bool:
         return (cell in self.cells)
 
+    def contains_all(self, cells) -> bool:
+        for cell in cells:
+            if not self.contains(cell):
+                return False
+
+        return True
+
     def add(self, cells=list):
-        self.cells.append(cells)
+        for cell in cells:
+            self.cells.add(cell)
 
     def add_constraint(self, constraint):
         self.constraint += constraint
 
     def add_group(self, group: Group):
         self.groups.append(group)
+
+    def add_groups(self, groups):
+        for group in groups:
+            self.groups.append(group)
+
+    def get_cells(self):
+        return self.cells

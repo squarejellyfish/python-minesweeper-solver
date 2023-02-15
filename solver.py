@@ -386,27 +386,58 @@ class Solver():
             if group == self.groups[0]:
                 continue
 
-            for cell in group.cells:
+            for cluster in clusters:
+                if cluster.contains_all(group.cells):
+                    break
+            else:
+                for cell in group.cells:
+                    added = False
+                    for cluster in clusters:
+
+                        if cluster.contains(cell):
+                            added = True
+                            cells = list(group.cells)
+                            cluster.add(cells)
+                            break
+                    if added:
+                        cluster.add_constraint(group.mines)
+                        cluster.add_group(group)
+                        break
+                else:  # means this is an alone group
+                    new = Cluster(list(group.cells), group.mines)
+                    clusters.append(new)
+
+        self.clusters = clusters
+
+        remove_list = []
+        for cluster in self.clusters:
+            for cell in cluster.get_cells():
                 added = False
-                for cluster in clusters:
-                    if cluster.contains(cell):
+                for other in self.clusters:
+                    if other is cluster:
+                        continue
+                    if other.contains(cell) and other.constraint >= cluster.constraint:
                         added = True
-                        cells = list(group.cells)
-                        cluster.add(cells)
+                        remove_list.append(cluster)
                         break
                 if added:
-                    cluster.add_constraint(group.mines)
-                    cluster.add_group(group)
+                    other.add(cluster.get_cells())
+                    other.add_constraint(cluster.constraint)
+                    other.add_groups(cluster.groups)
                     break
-            else:  # means this is an alone group
-                new = Cluster(list(group.cells), group.mines)
-                clusters.append(new)
 
-        # if len(clusters) > 12 or len(self.covered_list) > 50:
-        #     self.cluster = []
-        #     return
+        for item in remove_list:
+            self.clusters.remove(item)
 
-        cells_pos = {cell: pos for pos, cell in enumerate(clusters)}
+        with open('output.log', 'a') as file:
+            for cluster in self.clusters:
+                file.write(f'{cluster=}\n')
+                file.write(f'{len(cluster.get_cells())=}\n')
+                file.write(f'{cluster.constraint=}\n')
+                for cell in cluster.get_cells():
+                    file.write(f'{cell.position}\n')
+
+    def search_cluster_CSP(self):
 
         def search(current_comb: list, position):
 
@@ -450,6 +481,9 @@ class Solver():
                     else:
                         search(curr_comb, pos+1)
 
+        cells_pos = {cell: pos for cluster in self.clusters for pos,
+                     cell in enumerate(cluster)}
+
         result = set()
         default = [False for _ in range(len(clusters))]
         search(default, 0)
@@ -457,34 +491,35 @@ class Solver():
         self.cluster = clusters
 
     # Not sure yet
+
     def do_cluster_CSP(self):
 
         self.init_cluster_CSP()
 
-        if not self.cluster:
-            return
+        # if not self.clusters:
+        #     return
 
-        with open('output.log', 'a') as file:
-            file.write(f'{len(self.cluster)=}\n')
-            file.write(f'{self.cluster_solutions=}\n')
+        # with open('output.log', 'a') as file:
+        #     file.write(f'{len(self.cluster)=}\n')
+        #     file.write(f'{self.cluster_solutions=}\n')
 
-        for pos, cell in enumerate(self.cluster):
+        # for pos, cell in enumerate(self.cluster):
 
-            mines_in_solution = 0
-            for sol in self.cluster_solutions:
-                if sol[pos]:
-                    mines_in_solution += 1
+        #     mines_in_solution = 0
+        #     for sol in self.cluster_solutions:
+        #         if sol[pos]:
+        #             mines_in_solution += 1
 
-            if mines_in_solution == 0:
-                with open('output.log', 'a') as file:
-                    file.write(
-                        f'[CLUSTER] Appended {cell.position} to clean list.\n')
-                self.clean_list.append(cell)
-            elif mines_in_solution == len(self.cluster_solutions):
-                with open('output.log', 'a') as file:
-                    file.write(
-                        f'[CLUSTER] Appended {cell.position} to mark list.\n')
-                self.mark_list.append(cell)
+        #     if mines_in_solution == 0:
+        #         with open('output.log', 'a') as file:
+        #             file.write(
+        #                 f'[CLUSTER] Appended {cell.position} to clean list.\n')
+        #         self.clean_list.append(cell)
+        #     elif mines_in_solution == len(self.cluster_solutions):
+        #         with open('output.log', 'a') as file:
+        #             file.write(
+        #                 f'[CLUSTER] Appended {cell.position} to mark list.\n')
+        #         self.mark_list.append(cell)
 
     def generate_bruteforce(self):
 
@@ -554,9 +589,9 @@ class Solver():
         self.doGroup()
         self.doSubGroup()
 
-        if not self.clean_list and not self.mark_list:
+        if not self.clean_list and not self.mark_list and len(self.covered_list) < self.width * self.height:
             self.do_cluster_CSP()
-        if not self.clean_list and not self.mark_list:
+        if not self.clean_list and not self.mark_list and len(self.covered_list) < self.width * self.height:
             self.do_bruteforce()
         #     self.doDeduceRemain()
         # except Exception as e:
