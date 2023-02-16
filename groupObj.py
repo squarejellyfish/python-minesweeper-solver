@@ -65,3 +65,10 @@ class Cluster(Group):
 
     def get_cells(self):
         return self.cells
+
+    def approximate_mines(self) -> float:
+        total = 0
+        for cell in self.cells:
+            total += cell.probability
+
+        return total

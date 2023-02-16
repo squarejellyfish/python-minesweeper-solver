@@ -100,7 +100,7 @@ class Solver():
         self.isComplete = False
         self.mode = mode
         self.covered_list = set()
-
+        self.finished_clusters = []
         self.corners = set()
 
     def defineBoard(self):
@@ -419,6 +419,9 @@ class Solver():
 
         remove_list = []
         for cluster in self.clusters:
+            if cluster in self.finished_clusters:
+                remove_list.append(cluster)
+                continue
             for cell in cluster.get_cells():
                 added = False
                 for other in self.clusters:
@@ -490,7 +493,6 @@ class Solver():
                         search(curr_comb, pos+1)
 
         chosen_cluster = min(self.clusters, key=attrgetter('weight'))
-        print(len(chosen_cluster.get_cells()))
         if len(chosen_cluster.get_cells()) > 12:
             return None
 
@@ -505,6 +507,7 @@ class Solver():
         # self.cluster = clusters
 
     # Not sure yet
+    # @dump
     def do_cluster_CSP(self):
 
         self.init_cluster_CSP()
@@ -519,6 +522,7 @@ class Solver():
         #     file.write(f'{len(chosen_cluster.get_cells())=}\n')
         #     file.write(f'{self.cluster_solutions=}\n')
 
+        has_solution = False
         for pos, cell in enumerate(chosen_cluster.get_cells()):
 
             mines_in_solution = 0
@@ -533,6 +537,7 @@ class Solver():
                 #     file.write(
                 #         f'[CLUSTER] Appended {(col, row)} to clean list.\n')
                 self.clean_list.append(cell)
+                has_solution = True
             elif mines_in_solution == len(self.cluster_solutions):
                 # with open('output.log', 'a') as file:
                 #     col = (cell.position[0]-self.origin[0]) // 20 + 1
@@ -540,6 +545,26 @@ class Solver():
                 #     file.write(
                 #         f'[CLUSTER] Appended {(col, row)} to mark list.\n')
                 self.mark_list.append(cell)
+                has_solution = True
+            else:
+                cell.set_probability(mines_in_solution /
+                                     len(self.cluster_solutions))
+
+        if not has_solution:
+            self.finished_clusters.append(chosen_cluster)
+            # with open('output.log', 'a') as file:
+            #     file.write('Finished clusters: \n\n')
+            #     for cluster in self.finished_clusters:
+            #         file.write(f'{cluster=}\n')
+            #         total = 0
+            #         for cell in cluster.get_cells():
+            #             col = (cell.position[0]-self.origin[0]) // 20 + 1
+            #             row = (cell.position[1]-self.origin[1]) // 20 + 1
+            #             file.write(
+            #                 f'{(col, row)} has probability: {cell.probability}\n')
+            #             total += cell.probability
+            #         file.write(
+            #             f'This finished cluster has a average of {total} mines.\n')
 
     def generate_bruteforce(self):
 
@@ -584,11 +609,91 @@ class Solver():
                 #     file.write(
                 #         f'[BRUTEFORCE] Appended {cell.position} to clean list.\n')
                 self.clean_list.append(cell)
+                for cluster in self.finished_clusters:
+                    if cell in cluster.get_cells():
+                        self.finished_clusters.remove(cluster)
+                        break
             elif mines_in_solution == len(self.bruteforce_solutions):
                 # with open('output.log', 'a') as file:
                 #     file.write(
                 #         f'[BRUTEFORCE] Appended {cell.position} to mark list.\n')
                 self.mark_list.append(cell)
+                for cluster in self.finished_clusters:
+                    if cell in cluster.get_cells():
+                        self.finished_clusters.remove(cluster)
+                        break
+
+    @dump
+    def do_probability(self):
+
+        def choose_from_cluster():
+            choice = min(cells, key=attrgetter('probability'))
+            self.clean_list.append(choice)
+            # with open('output.log', 'a') as file:
+            #     col = (choice.position[0]-self.origin[0]) // 20 + 1
+            #     row = (choice.position[1]-self.origin[1]) // 20 + 1
+            #     file.write(
+            #         f'{(col, row)} has been chosen with prob of {choice.probability}\n')
+            #     file.write(f'wasteland length: {len(wasteland)}\n')
+            for cluster in self.finished_clusters:
+                if choice in cluster.get_cells():
+                    self.finished_clusters.remove(cluster)
+                    break
+
+        def guess():
+            if self.corners:
+                self.select_corner()
+                return
+
+            choice = wasteland.pop()
+            # with open('output.log', 'a') as file:
+            #     col = (choice.position[0]-self.origin[0]) // 20 + 1
+            #     row = (choice.position[1]-self.origin[1]) // 20 + 1
+            #     file.write(
+            #         f'[GUESS] {(col, row)} has been chosen with prob of {prob_wasteland}\n')
+            #     file.write(f'wasteland length: {len(wasteland)}\n')
+            self.clean_list.append(choice)
+
+        wasteland = self.covered_list.copy()  # covered list but minus cluster cells
+        for cluster in self.clusters:
+            for cell in cluster.get_cells():
+                try:
+                    wasteland.remove(cell)
+                except KeyError:
+                    continue
+
+        try:
+            remaining = self.remaining
+            cells = []
+            for cluster in self.finished_clusters:
+                approx_mines = cluster.approximate_mines()
+                remaining -= approx_mines
+                for cell in cluster.get_cells():
+                    cells.append(cell)
+
+            cells = np.array(cells)
+            prob_wasteland = remaining / len(wasteland)
+            if all(cell.probability > prob_wasteland for cell in cells):
+                guess()
+            else:
+                choose_from_cluster()
+        except ZeroDivisionError:
+            choose_from_cluster()
+
+    def do_random_move(self):
+        if self.covered_list:
+            choice = random.choice(list(self.covered_list))
+            self.clean_list.append(choice)
+            # with open('output.log', 'a') as file:
+            #     col = (choice.position[0]-self.origin[0]) // 20 + 1
+            #     row = (choice.position[1]-self.origin[1]) // 20 + 1
+            #     file.write(
+            #         f'[RANDOM] {(col, row)} has been click, {len(self.covered_list)=}\n')
+        else:
+            # os.system('cls')
+            print("[RANDOM] Game is completed!")
+            self.isComplete = True
+            return
 
     @timing
     def analyze(self):
@@ -613,21 +718,26 @@ class Solver():
             self.do_cluster_CSP()
         if not self.clean_list and not self.mark_list and len(self.covered_list) < self.width * self.height:
             self.do_bruteforce()
+        if not self.clean_list and not self.mark_list and len(self.covered_list) < self.width * self.height and self.finished_clusters:
+            self.do_probability()
+        if not self.clean_list and not self.mark_list:
+            self.do_random_move()
         #     self.doDeduceRemain()
         # except Exception as e:
         #     print("Something went wrong: ")
         #     sys.exit()
 
+    def select_corner(self):
+        random_tile = self.corners.pop()
+        self.clean_list.append(random_tile)
+        # with open('output.log', 'a') as file:
+        #     file.write('corner has been clicked\n')
+
     def click(self):
 
-        def clickCorner():
-            random_tile = self.corners.pop()
-            pyautogui.click(
-                random_tile.position[0], random_tile.position[1], button="left")
-
         mark_list = set(self.mark_list)
-        print("\033[92mMines remaining: " + str(self.remaining) + "\x1b[0m")
         clean_list = set(self.clean_list)
+        print("\033[92mMines remaining: " + str(self.remaining) + "\x1b[0m")
         logging.info(f"Corners remaining: {len(self.corners)}    ")
         logging.info(f'Covered remaining: {len(self.covered_list)}    ')
         logging.info(f'Groups remaining: {len(self.groups)}    ')
@@ -662,27 +772,10 @@ class Solver():
                 print("Game is completed")
                 self.isComplete = True
                 return
-            if self.covered_list:
-                if self.corners:
-                    clickCorner()
-                    time.sleep(0.01)
-                else:
-                    # sys.exit()
-                    # if self.corners:
-                    #     clickCorner()
 
-                    random_tile = random.choice(list(self.covered_list))
-                    pyautogui.click(
-                        random_tile.position[0], random_tile.position[1], button="left")
-                    self.mark_list.clear()
-                    self.clean_list.clear()
-                    self.groups.clear()
-                    self.subgroups.clear()
-            else:
-                # os.system('cls')
-                print("Game is completed!")
-                self.isComplete = True
-                return
+    def make_first_move(self):
+        self.fastReadBoard(self.origin)
+        self.select_corner()
 
     def restart(self):
         pyautogui.press("enter")
@@ -699,8 +792,9 @@ class Solver():
 @timing
 def solve(mode, width=None, height=None, mines=None):
     solver = Solver(mode=mode, width=width, height=height, mines=mines)
-    origin = solver.defineBoard()
     os.system('cls')
+    origin = solver.defineBoard()
+    solver.make_first_move()
     while 1:
         try:
             print('\x1b[H')
@@ -743,8 +837,9 @@ def solveNTimes(mode, N):
     for i in range(N):
 
         solver = Solver(mode=mode)
-        origin = solver.defineBoard()
         os.system('cls')
+        origin = solver.defineBoard()
+        solver.make_first_move()
         while 1:
             try:
                 print('\x1b[H', end="")

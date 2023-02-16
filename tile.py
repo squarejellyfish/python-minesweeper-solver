@@ -5,6 +5,7 @@ class Tile:
         self.marked = False
         self.flaged = True if flaged else False
         self.cleaned = False
+        self.probability = None
 
     def __eq__(self, other):
         if not isinstance(other, Tile):
@@ -39,3 +40,6 @@ class Tile:
 
     def isNumber(self):
         return self.state > 0 and self.state < 10
+
+    def set_probability(self, p: float):
+        self.probability = p
