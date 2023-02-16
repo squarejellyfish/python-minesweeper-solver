@@ -3,7 +3,6 @@ import os
 import pyautogui
 import numpy as np
 import tile
-import cv2 as cv
 from groupObj import Group, Cluster
 from math import floor
 from PIL import ImageGrab
