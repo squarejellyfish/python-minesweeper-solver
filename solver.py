@@ -623,7 +623,7 @@ class Solver():
                         self.finished_clusters.remove(cluster)
                         break
 
-    @dump
+    # @dump
     def do_probability(self):
 
         def choose_from_cluster():
@@ -837,9 +837,9 @@ def solveNTimes(mode, N):
     for i in range(N):
 
         solver = Solver(mode=mode)
-        os.system('cls')
         origin = solver.defineBoard()
         solver.make_first_move()
+        os.system('cls')
         while 1:
             try:
                 print('\x1b[H', end="")
@@ -870,7 +870,7 @@ def solveNTimes(mode, N):
                 error_count += 1
                 break
         solver.restart()
-        time.sleep(0.1)
+        time.sleep(0.05)
 
     print_result()
 
