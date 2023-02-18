@@ -198,7 +198,6 @@ class Solver():
                     continue
                 if self.board[row+i][index+j].state == None and not self.board[row+i][index+j].isMarked() and not self.board[row+i][index+j].isCleaned():
                     self.board[row+i][index+j].clean()
-                    # print("cleaned mine at", row+i, index+j)
                     self.clean_list.append(self.board[row+i][index+j])
 
     def checkNeighbor(self, row, index) -> tuple:
@@ -228,7 +227,6 @@ class Solver():
                     continue
                 if self.board[row+i][index+j].state == None and not self.board[row+i][index+j].isMarked():
                     self.board[row+i][index+j].mark()
-                    # print("marked mine at", row+i, index+j)
                     self.mark_list.append(self.board[row+i][index+j])
 
     def findNeighbors(self, row, index):
@@ -294,8 +292,6 @@ class Solver():
 
     def doTrivial(self, rindex, index, t):
         covered_count, flag_count = self.checkNeighbor(rindex, index)
-        # print("covered count at ", rindex, index, covered_count)
-        # print("t.state at", rindex, index, t.state)
         if covered_count == t.state - flag_count and not flag_count == t.state:
             self.markNeighbor(rindex, index)
         elif flag_count == t.state:
@@ -318,12 +314,6 @@ class Solver():
                         self.mark_list.append(mine)
 
                 if group_a.cells.issubset(group_b.cells) and group_b.mines - group_a.mines > 0:
-                    # for cell in group_a.cells:
-                    #     logging.info(
-                    #         f'Cells positions of group a cells: {cell.position}')
-                    # for cell in group_b.cells:
-                    #     logging.info(
-                    #         f'Cells positions of group b cells: {cell.position}')
                     new = Group(group_b.cells - group_a.cells,
                                 group_b.mines - group_a.mines)
                     if new not in self.groups:
@@ -353,27 +343,6 @@ class Solver():
                     if mines:
                         for mine in mines:
                             self.mark_list.append(mine)
-
-    # @timing
-    def doDeduceRemain(self):
-        unique = set()
-        mineCount = 0
-        for group in self.groups:
-            added = False
-            for cell in group.cells:
-                if cell not in unique:
-                    added = True
-                    unique.add(cell)
-            if added:
-                mineCount += group.mines
-
-        if mineCount == self.remaining:
-            os.system('cls')
-            logging.debug('Deduce remain is triggered.')
-            # sys.exit()
-            safes = list(self.covered_list - unique)
-            for safe in safes:
-                self.clean_list.append(safe)
 
     # @dump
     def init_cluster_CSP(self):
@@ -440,13 +409,6 @@ class Solver():
         for item in remove_list:
             self.clusters.remove(item)
 
-        # with open('output.log', 'a') as file:
-        #     for cluster in self.clusters:
-        #         file.write(f'{cluster=}\n')
-        #         file.write(f'{len(cluster.get_cells())=}\n')
-        #         file.write(f'{cluster.constraint=}\n')
-        #         for cell in cluster.get_cells():
-        #             file.write(f'{cell.position}\n')
     # @dump
     def search_cluster_CSP(self):
 
@@ -467,7 +429,6 @@ class Solver():
                     return
 
             if position == len(current_comb):
-                # result.add(tuple(current_comb))
                 return
 
             for pos, item in enumerate(current_comb):
@@ -518,10 +479,6 @@ class Solver():
         if chosen_cluster == None:
             return
 
-        # with open('output.log', 'a') as file:
-        #     file.write(f'{len(chosen_cluster.get_cells())=}\n')
-        #     file.write(f'{self.cluster_solutions=}\n')
-
         has_solution = False
         for pos, cell in enumerate(chosen_cluster.get_cells()):
 
@@ -531,19 +488,9 @@ class Solver():
                     mines_in_solution += 1
 
             if mines_in_solution == 0:
-                # with open('output.log', 'a') as file:
-                #     col = (cell.position[0]-self.origin[0]) // 20 + 1
-                #     row = (cell.position[1]-self.origin[1]) // 20 + 1
-                #     file.write(
-                #         f'[CLUSTER] Appended {(col, row)} to clean list.\n')
                 self.clean_list.append(cell)
                 has_solution = True
             elif mines_in_solution == len(self.cluster_solutions):
-                # with open('output.log', 'a') as file:
-                #     col = (cell.position[0]-self.origin[0]) // 20 + 1
-                #     row = (cell.position[1]-self.origin[1]) // 20 + 1
-                #     file.write(
-                #         f'[CLUSTER] Appended {(col, row)} to mark list.\n')
                 self.mark_list.append(cell)
                 has_solution = True
             else:
@@ -552,19 +499,6 @@ class Solver():
 
         if not has_solution:
             self.finished_clusters.append(chosen_cluster)
-            # with open('output.log', 'a') as file:
-            #     file.write('Finished clusters: \n\n')
-            #     for cluster in self.finished_clusters:
-            #         file.write(f'{cluster=}\n')
-            #         total = 0
-            #         for cell in cluster.get_cells():
-            #             col = (cell.position[0]-self.origin[0]) // 20 + 1
-            #             row = (cell.position[1]-self.origin[1]) // 20 + 1
-            #             file.write(
-            #                 f'{(col, row)} has probability: {cell.probability}\n')
-            #             total += cell.probability
-            #         file.write(
-            #             f'This finished cluster has a average of {total} mines.\n')
 
     def generate_bruteforce(self):
 
@@ -605,18 +539,12 @@ class Solver():
                     mines_in_solution += 1
 
             if mines_in_solution == 0:
-                # with open('output.log', 'a') as file:
-                #     file.write(
-                #         f'[BRUTEFORCE] Appended {cell.position} to clean list.\n')
                 self.clean_list.append(cell)
                 for cluster in self.finished_clusters:
                     if cell in cluster.get_cells():
                         self.finished_clusters.remove(cluster)
                         break
             elif mines_in_solution == len(self.bruteforce_solutions):
-                # with open('output.log', 'a') as file:
-                #     file.write(
-                #         f'[BRUTEFORCE] Appended {cell.position} to mark list.\n')
                 self.mark_list.append(cell)
                 for cluster in self.finished_clusters:
                     if cell in cluster.get_cells():
@@ -629,12 +557,6 @@ class Solver():
         def choose_from_cluster():
             choice = min(cells, key=attrgetter('probability'))
             self.clean_list.append(choice)
-            # with open('output.log', 'a') as file:
-            #     col = (choice.position[0]-self.origin[0]) // 20 + 1
-            #     row = (choice.position[1]-self.origin[1]) // 20 + 1
-            #     file.write(
-            #         f'{(col, row)} has been chosen with prob of {choice.probability}\n')
-            #     file.write(f'wasteland length: {len(wasteland)}\n')
             for cluster in self.finished_clusters:
                 if choice in cluster.get_cells():
                     self.finished_clusters.remove(cluster)
@@ -646,12 +568,6 @@ class Solver():
                 return
 
             choice = wasteland.pop()
-            # with open('output.log', 'a') as file:
-            #     col = (choice.position[0]-self.origin[0]) // 20 + 1
-            #     row = (choice.position[1]-self.origin[1]) // 20 + 1
-            #     file.write(
-            #         f'[GUESS] {(col, row)} has been chosen with prob of {prob_wasteland}\n')
-            #     file.write(f'wasteland length: {len(wasteland)}\n')
             self.clean_list.append(choice)
 
         wasteland = self.covered_list.copy()  # covered list but minus cluster cells
@@ -684,13 +600,8 @@ class Solver():
         if self.covered_list:
             choice = random.choice(list(self.covered_list))
             self.clean_list.append(choice)
-            # with open('output.log', 'a') as file:
-            #     col = (choice.position[0]-self.origin[0]) // 20 + 1
-            #     row = (choice.position[1]-self.origin[1]) // 20 + 1
-            #     file.write(
-            #         f'[RANDOM] {(col, row)} has been click, {len(self.covered_list)=}\n')
         else:
-            # os.system('cls')
+            os.system('cls')
             print("[RANDOM] Game is completed!")
             self.isComplete = True
             return
@@ -722,7 +633,6 @@ class Solver():
             self.do_probability()
         if not self.clean_list and not self.mark_list:
             self.do_random_move()
-        #     self.doDeduceRemain()
         # except Exception as e:
         #     print("Something went wrong: ")
         #     sys.exit()
@@ -737,7 +647,7 @@ class Solver():
 
         mark_list = set(self.mark_list)
         clean_list = set(self.clean_list)
-        print("\033[92mMines remaining: " + str(self.remaining) + "\x1b[0m")
+        logging.info(f"Mines remaining: {self.remaining}    ")
         logging.info(f"Corners remaining: {len(self.corners)}    ")
         logging.info(f'Covered remaining: {len(self.covered_list)}    ')
         logging.info(f'Groups remaining: {len(self.groups)}    ')
