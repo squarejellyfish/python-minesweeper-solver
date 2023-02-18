@@ -22,7 +22,7 @@ def timing(f):
         time1 = time.perf_counter()
         ret = f(*args, **kwargs)
         time2 = time.perf_counter()
-        print(
+        logging.info(
             f'\033[92m{f.__name__} function took {(time2-time1)*1000:.2f} ms.\x1b[0m')
 
         return ret
