@@ -66,19 +66,22 @@ def generate_all_posistion(count, mines):
 
 class Solver():
 
-    def __init__(self, mode="B", width=8, height=8, mines=99) -> None:
+    def __init__(self, mode="B", width=8, height=8) -> None:
 
         self.mark_list = []
         self.clean_list = []
         if mode == "B":
             self.width = 8
             self.height = 8
+            self.MINES = 10
         if mode == "E":
             self.width = 30
             self.height = 16
+            self.MINES = 99
         elif mode == "I":
             self.width = 16
             self.height = 16
+            self.MINES = 40
         elif mode == "C":
             self.width = width
             self.height = height
@@ -87,14 +90,6 @@ class Solver():
         self.board = np.ndarray((self.height, self.width), dtype=object)
         self.groups = []
         self.subgroups = []
-        if mode == "E":
-            self.MINES = 99
-        elif mode == "I":
-            self.MINES = 40
-        elif mode == "B":
-            self.MINES = 10
-        elif mode == "C":
-            self.MINES = mines
         self.remaining = 0
         self.isDead = False
         self.isComplete = False
@@ -700,8 +695,8 @@ class Solver():
 
 
 @timing
-def solve(mode, width=None, height=None, mines=None):
-    solver = Solver(mode=mode, width=width, height=height, mines=mines)
+def solve(mode):
+    solver = Solver(mode=mode)
     os.system('cls')
     origin = solver.defineBoard()
     solver.make_first_move()
