@@ -593,7 +593,7 @@ class Solver():
                 guess()
             else:
                 choose_from_cluster()
-        except ZeroDivisionError:
+        except ZeroDivisionError:  # no wasteland (only cluster left)
             choose_from_cluster()
 
     def do_random_move(self):
