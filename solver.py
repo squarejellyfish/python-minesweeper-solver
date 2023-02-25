@@ -98,12 +98,20 @@ class Solver():
         self.finished_clusters = []
         self.corners = set()
 
-    def defineBoard(self):
+    def define_board(self):
+        '''
+        Automatically find the game board on screen using pyautogui.locateOnScreen()
+
+        returns the top left coordinate of the board.
+        '''
         origin = pyautogui.locateOnScreen("covered.png", confidence=0.97)
         self.origin = origin
         return origin
 
-    def detectNumber(self, RGB):
+    def detect_number(self, RGB):
+        '''
+        Reads the pixel and returns the corresponding number.
+        '''
         if RGB[2] > 200 and RGB[0] < 100 and RGB[1] < 100:
             return 1
         elif RGB[1] > 120 and RGB[1] < 140 and RGB[0] < 50 and RGB[2] < 50:
@@ -125,12 +133,17 @@ class Solver():
         elif RGB[0] > 200 and RGB[1] > 200 and RGB[2] > 200:
             return "white"
 
-    def generateCoveredList(self):
+    def generate_covered_list(self):
         self.covered_list = set(
             [col for row in self.board for col in row if col.state == None])
 
     # @timing
-    def fastReadBoard(self, origin):
+    def fast_read_board(self, origin):
+        '''
+        Loop through the board and read several pixels to identify the correct number, and save the result in self.board.
+
+        Also check if the tile is a corner tile, if true, save it in self.corners (makes some calculations easier).
+        '''
 
         pyautogui.moveTo(0, 100)
 
@@ -144,11 +157,11 @@ class Solver():
                 pixel = img_np[row+5][col+9]
                 pixel2 = img_np[row+14][col+9]
                 pixel_topleft = img_np[row][col]
-                dead_checker1 = self.detectNumber(img_np[row+2][col+18])
-                dead_checker2 = self.detectNumber(img_np[row+9][col+13])
-                num = self.detectNumber(pixel)
-                checker = self.detectNumber(pixel2)
-                checker_topleft = self.detectNumber(pixel_topleft)
+                dead_checker1 = self.detect_number(img_np[row+2][col+18])
+                dead_checker2 = self.detect_number(img_np[row+9][col+13])
+                num = self.detect_number(pixel)
+                checker = self.detect_number(pixel2)
+                checker_topleft = self.detect_number(pixel_topleft)
                 state = num
                 if num == 3 and checker == 7:
                     num = "\033[91m" + "X" + "\x1b[0m"  # flaged
@@ -180,11 +193,11 @@ class Solver():
                 print(num, end=" ") if num else print(" ", end=" ")
             print("")
 
-        self.generateCoveredList()
+        self.generate_covered_list()
 
         self.remaining = remaining
 
-    def cleanNeighbor(self, row, index):
+    def clean_neighbor(self, row, index):
         for i in range(-1, 2, 1):
             if (row+i) < 0 or (row+i) > self.height - 1:
                 continue
@@ -195,7 +208,7 @@ class Solver():
                     self.board[row+i][index+j].clean()
                     self.clean_list.append(self.board[row+i][index+j])
 
-    def checkNeighbor(self, row, index) -> tuple:
+    def check_neighbor(self, row, index) -> tuple:
         covered_count = 0
         flag_count = 0
         for i in range(-1, 2, 1):
@@ -213,7 +226,7 @@ class Solver():
 
         return covered_count, flag_count
 
-    def markNeighbor(self, row, index):
+    def mark_neighbor(self, row, index):
         for i in range(-1, 2, 1):
             if (row+i) < 0 or (row+i) > self.height - 1:
                 continue
@@ -224,7 +237,7 @@ class Solver():
                     self.board[row+i][index+j].mark()
                     self.mark_list.append(self.board[row+i][index+j])
 
-    def findNeighbors(self, row, index):
+    def find_neighbors(self, row, index):
         neighbors = []
         for i in range(-1, 2, 1):
             if (row+i) < 0 or (row+i) > self.height - 1:
@@ -236,11 +249,15 @@ class Solver():
 
         return neighbors
 
-    def generateGroup(self, rindex, index, t):
+    def generate_group(self, rindex, index, t):
+        """
+        Loop through every neighbor and add the valid ones to a group.
+        A group contains: cells: set[tiles], active_mines: int
+        """
         active_mines = t.state
         covered_neighbors = []
         if t.state:
-            neighbors = self.findNeighbors(rindex, index)
+            neighbors = self.find_neighbors(rindex, index)
             for neighbor in neighbors:
                 if neighbor.isCovered() and not neighbor.isMarked() and not neighbor.isCleaned():
                     covered_neighbors.append(neighbor)
@@ -249,7 +266,7 @@ class Solver():
         if active_mines:  # exclude ones with no mines around
             self.groups.append(Group(covered_neighbors, active_mines))
 
-    def generateSubGroup_AL(self):  # "at least" subgroup
+    def generate_sub_group_AL(self):  # "at least" subgroup
         for group in self.groups:
 
             if len(group.cells) > 7:
@@ -262,7 +279,7 @@ class Solver():
                                 group.mines - 1, "at least")
                     self.subgroups.append(new)
 
-    def generateSubGroup_NMT(self):  # "no more than" subgroup
+    def generate_sub_group_NMT(self):  # "no more than" subgroup
         for group in self.groups:
 
             if len(group.cells) > 7:
@@ -285,15 +302,22 @@ class Solver():
             if (len(group_b.cells) - len(group_a.cells)) == (group_b.mines - group_a.mines):
                 return list(group_b.cells - group_a.cells)
 
-    def doTrivial(self, rindex, index, t):
-        covered_count, flag_count = self.checkNeighbor(rindex, index)
+    def do_trivial(self, rindex, index, t):
+        """
+        Check neighbors of a tile, if covered neighbors count = mines left, mark all of them.
+        If flaged neighbors count = mines, mark them as safe.
+        """
+        covered_count, flag_count = self.check_neighbor(rindex, index)
         if covered_count == t.state - flag_count and not flag_count == t.state:
-            self.markNeighbor(rindex, index)
+            self.mark_neighbor(rindex, index)
         elif flag_count == t.state:
-            self.cleanNeighbor(rindex, index)
+            self.clean_neighbor(rindex, index)
 
     # @timing
-    def doGroup(self):
+    def do_group(self):
+        """
+        Loop through every group and deduce safes and mines.
+        """
         for group_a in self.groups:
             for group_b in self.groups:
                 if group_a == group_b:
@@ -316,10 +340,13 @@ class Solver():
                         self.groups.append(new)
 
     # @timing
-    def doSubGroup(self):
+    def do_sub_group(self):
+        """
+        Loop through every little group in group (sub-group) and deduce safes and mines.
+        """
 
-        self.generateSubGroup_AL()
-        self.generateSubGroup_NMT()
+        self.generate_sub_group_AL()
+        self.generate_sub_group_NMT()
 
         for group_a in self.subgroups:
 
@@ -341,6 +368,9 @@ class Solver():
 
     # @dump
     def init_cluster_CSP(self):
+        """
+        Initialize clusters: for groups that share one or multiple cells, they are considered a cluster.
+        """
 
         try:
             first_group_cells = list(self.groups[0].cells)
@@ -406,6 +436,10 @@ class Solver():
 
     # @dump
     def search_cluster_CSP(self):
+        """
+        Recursively search every valid positions of a chosen cluster, a chosen cluster is chosen by the weight of it.
+        Weight = length of cluster / constraint of cluster
+        """
 
         def search(current_comb: list, position):
 
@@ -465,6 +499,10 @@ class Solver():
     # Not sure yet
     # @dump
     def do_cluster_CSP(self):
+        """
+        Check every valid solution generated from init_cluster_CSP()
+        If a cell is a mine or is safe in every solution, it is determined.
+        """
 
         self.init_cluster_CSP()
         if not self.clusters:
@@ -496,6 +534,9 @@ class Solver():
             self.finished_clusters.append(chosen_cluster)
 
     def generate_bruteforce(self):
+        """
+        Recursively generate every valid solution using generate_all_position()
+        """
 
         cells_pos = {cell: pos for pos, cell in enumerate(self.covered_list)}
 
@@ -520,6 +561,10 @@ class Solver():
 
     # @dump
     def do_bruteforce(self):
+        """
+        When there is only a few covered cells or the combinations of solutions is not too many, bruteforce the solution.
+        If a cell is safe in all solutions, it's safe, same as mine.
+        """
 
         if len(self.covered_list) > 25 or math.comb(len(self.covered_list), self.remaining) > 3060:
             return
@@ -548,6 +593,9 @@ class Solver():
 
     # @dump
     def do_probability(self):
+        """
+        I have no idea what this function does but I think it works.
+        """
 
         def choose_from_cluster():
             choice = min(cells, key=attrgetter('probability'))
@@ -592,6 +640,9 @@ class Solver():
             choose_from_cluster()
 
     def do_random_move(self):
+        """
+        Literally do random move.
+        """
         if self.covered_list:
             choice = random.choice(list(self.covered_list))
             self.clean_list.append(choice)
@@ -603,22 +654,33 @@ class Solver():
 
     @timing
     def analyze(self):
+        """
+        Main analyze method, will call:
+        1. do_trivial
+        2. do_group
+        3. do_sub_group
+        4. do_cluster_CSP
+        5. do_bruteforce
+        6. do_probability
+
+        If none of the above yields any result, will call do_random_move() to guess.
+        """
 
         # try:
         for rindex, row in enumerate(self.board):
             for index, t in enumerate(row):
                 if t.state == 0 or t.state == None or t.isFlaged():
                     continue
-                self.doTrivial(rindex, index, t)
+                self.do_trivial(rindex, index, t)
 
         for rindex, row in enumerate(self.board):
             for index, t in enumerate(row):
                 if t.state == 0 or t.state == None or t.isFlaged():
                     continue
-                self.generateGroup(rindex, index, t)
+                self.generate_group(rindex, index, t)
 
-        self.doGroup()
-        self.doSubGroup()
+        self.do_group()
+        self.do_sub_group()
 
         if not self.clean_list and not self.mark_list and len(self.covered_list) < self.width * self.height:
             self.do_cluster_CSP()
@@ -679,7 +741,7 @@ class Solver():
                 return
 
     def make_first_move(self):
-        self.fastReadBoard(self.origin)
+        self.fast_read_board(self.origin)
         self.select_corner()
 
     def restart(self):
@@ -698,12 +760,12 @@ class Solver():
 def solve(mode):
     solver = Solver(mode=mode)
     os.system('cls')
-    origin = solver.defineBoard()
+    origin = solver.define_board()
     solver.make_first_move()
     while 1:
         try:
             print('\x1b[H')
-            solver.fastReadBoard(origin)
+            solver.fast_read_board(origin)
             if solver.isDead or solver.isComplete:
                 sys.exit()
             solver.analyze()
@@ -716,11 +778,11 @@ def solve(mode):
 
 def testsolve(mode):
     solver = Solver(mode=mode)
-    origin = solver.defineBoard()
+    origin = solver.define_board()
     os.system('cls')
 
     print('\x1b[H')
-    solver.fastReadBoard(origin)
+    solver.fast_read_board(origin)
     if solver.isDead or solver.isComplete:
         sys.exit()
     solver.analyze()
@@ -742,7 +804,7 @@ def solveNTimes(mode, N):
     for i in range(N):
 
         solver = Solver(mode=mode)
-        origin = solver.defineBoard()
+        origin = solver.define_board()
         solver.make_first_move()
         os.system('cls')
         while 1:
@@ -752,7 +814,7 @@ def solveNTimes(mode, N):
                 print(f"Wins: {complete_count}")
                 print(f"Loses: {dead_count}")
                 print(f"Errors: {error_count}")
-                solver.fastReadBoard(origin)
+                solver.fast_read_board(origin)
                 if solver.isDead:
                     dead_count += 1
                     break
