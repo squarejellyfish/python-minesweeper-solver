@@ -1,5 +1,7 @@
 # **Python踩地雷工人**
 
+[en](./README.en.md) &emsp;
+
 一個小小的project
 
 code**超級超級**凌亂
@@ -16,15 +18,15 @@ $ git clone https://github.com/jasonjustin/python-minesweeper-solver.git
 $ cd python-minesweeper-solver
 ```
 
-## **使用方法**
+# **使用方法**
 
-### **概要**
+## **概要**
 
 ```
 $ python solver.py [-m <mode>] [-t <times>] [-h | --help]
 ```
 
-### **簡介**
+## **簡介**
 
 此程式會自動找到螢幕上開起的踩地雷程式，並將他解完
 
@@ -34,7 +36,7 @@ $ python solver.py [-m <mode>] [-t <times>] [-h | --help]
 
 並且有多次數模式，使用者可以指定要解幾盤遊戲，且結束會統計輸贏數據
 
-### **參數們**
+## **參數們**
 
 **`-h`  
 `--help`**  
