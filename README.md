@@ -2,17 +2,20 @@
 
 A little side project.
 
-The code is **REALLY** bad
+The code is **REALLY** bad.
+
+Some codes are stolen from [Games Computers Play](https://www.youtube.com/watch?v=uvRQUWxOHqo), go check his videos out it's great.
 
 ## **SETUP**
 
-**note!** This solver only works on Windows system
+**NOTE!** This solver only works on Windows system
 
 1. Download [Minesweeper X](https://minesweepergame.com/download/minesweeper-x.php)、[Arbiter](https://minesweepergame.com/download/arbiter.php), or any minesweeper game clone(Arbiter is recommended). Open the game.
-2. Change the scale to 125% in display settings.
+2. Change the scale to 125% in display settings (sorry for this one but I'll fix it if I have time).
 3. In terminal, run:
 ```
 $ git clone https://github.com/jasonjustin/python-minesweeper-solver.git
+$ pip install -r requirements.txt
 $ cd python-minesweeper-solver
 ```
 
@@ -32,7 +35,7 @@ It can play the game from the beginning, or finish the already started game.
 
 **Note: The top left corner cell must be covered when run in the middle of the game**
 
-The solver supports multi-game mode, user can specify the time. Statistics will be shown after all games are finished.
+The solver can solve multiple times if user specify the time using `-t`. Statistics will be shown after all games are finished.
 
 ## **OPTIONS**
 

@@ -15,6 +15,7 @@ code**超級超級**凌亂
 3. 在終端機執行
 ```
 $ git clone https://github.com/jasonjustin/python-minesweeper-solver.git
+$ pip install -r requirements.txt
 $ cd python-minesweeper-solver
 ```
 
