@@ -1,51 +1,54 @@
-# **Python踩地雷工人**
+# Python Minesweeper Solver
 
-[en](./README.en.md) &emsp;
+A little side project.
 
-一個小小的project
+The code is **REALLY** bad
 
-code**超級超級**凌亂
+## **SETUP**
 
-## **前置作業**
+**note!** This solver only works on Windows system
 
-**注意!** 要在windows系統上才能使用
-
-1. 下載[Minesweeper X](https://minesweepergame.com/download/minesweeper-x.php)、[Arbiter](https://minesweepergame.com/download/arbiter.php)或任何minesweeper的clone(推薦Arbiter)，並開啟
-2. 在顯示設定中，將縮放調整到125%(之後會改良這個我保證)
-3. 在終端機執行
+1. Download [Minesweeper X](https://minesweepergame.com/download/minesweeper-x.php)、[Arbiter](https://minesweepergame.com/download/arbiter.php), or any minesweeper game clone(Arbiter is recommended). Open the game.
+2. Change the scale to 125% in display settings.
+3. In terminal, run:
 ```
 $ git clone https://github.com/jasonjustin/python-minesweeper-solver.git
 $ cd python-minesweeper-solver
 ```
 
-# **使用方法**
+# **USAGE**
 
-## **概要**
+## **SYNOPSIS**
 
 ```
 $ python solver.py [-m <mode>] [-t <times>] [-h | --help]
 ```
 
-## **簡介**
+## **DESCRIPTION**
 
-此程式會自動找到螢幕上開起的踩地雷程式，並將他解完
+The solver will automatically find the game on screen and solve it.
 
-他可以從頭開始自己解，也可以接手你解到一半的遊戲
+It can play the game from the beginning, or finish the already started game.
 
-**注意: 若是要接手，最左上的方塊必須是未開啟的狀態**
+**Note: The top left corner cell must be covered when run in the middle of the game**
 
-並且有多次數模式，使用者可以指定要解幾盤遊戲，且結束會統計輸贏數據
+The solver supports multi-game mode, user can specify the time. Statistics will be shown after all games are finished.
 
-## **參數們**
+## **OPTIONS**
 
 **`-h`  
 `--help`**  
-顯示參數們  
+Show all the options.  
 
 **`-m`  
 `--mode`**  
-遊戲模式，初階(beginner)為B，中階(intermediate)為I，高階(expert)為E。預設為高階模式。  
+Game mode, B for Beginner, I for Intermediate, E for Expert. Default is Expert mdoe.
 
 **`-t`  
 `--times`**  
-多次數模式，若不輸入則預設只解一次。
+Multi-game mode, default is one time.
+
+TODO:
+- Refactor
+- Rewrite with all CSP solving (may be faster)
+- Introduce [`Frontier Dynamic Programming`](https://www.youtube.com/watch?v=G2kd745uYuo)
