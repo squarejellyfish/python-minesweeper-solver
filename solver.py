@@ -22,8 +22,7 @@ def timing(f):
         time1 = time.perf_counter()
         ret = f(*args, **kwargs)
         time2 = time.perf_counter()
-        logging.info(
-            f'\033[92m{f.__name__} function took {(time2-time1)*1000:.2f} ms.\x1b[0m')
+        logging.info(f"{f.__name__} function took {(time2-time1)*1000:.2f} ms.")
 
         return ret
     return wrap
@@ -198,6 +197,9 @@ class Solver():
         self.remaining = remaining
 
     def clean_neighbor(self, row, index):
+        '''
+        Loop through neighbors and check if each is clickable.                                           
+        '''
         for i in range(-1, 2, 1):
             if (row+i) < 0 or (row+i) > self.height - 1:
                 continue
@@ -209,6 +211,9 @@ class Solver():
                     self.clean_list.append(self.board[row+i][index+j])
 
     def check_neighbor(self, row, index) -> tuple:
+        '''
+        Loop through neighbors and return the covered and flaged count.
+        '''
         covered_count = 0
         flag_count = 0
         for i in range(-1, 2, 1):
@@ -227,6 +232,9 @@ class Solver():
         return covered_count, flag_count
 
     def mark_neighbor(self, row, index):
+        '''
+        Loop through neighbors and add each flaged ones to mark list.
+        '''
         for i in range(-1, 2, 1):
             if (row+i) < 0 or (row+i) > self.height - 1:
                 continue
@@ -237,7 +245,10 @@ class Solver():
                     self.board[row+i][index+j].mark()
                     self.mark_list.append(self.board[row+i][index+j])
 
-    def find_neighbors(self, row, index):
+    def find_neighbors(self, row, index) -> list:
+        '''
+        Loop through tiles surrounding current cell and return them.
+        '''
         neighbors = []
         for i in range(-1, 2, 1):
             if (row+i) < 0 or (row+i) > self.height - 1:
