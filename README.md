@@ -1,6 +1,6 @@
 # Python Minesweeper Solver
 
-[zh](./README.md) &emsp;
+[zh](./README.zh.md) &emsp;
 
 A little side project.
 
