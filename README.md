@@ -1,5 +1,7 @@
 # Python Minesweeper Solver
 
+[zh](./README.md) &emsp;
+
 A little side project.
 
 The code is **REALLY** bad.

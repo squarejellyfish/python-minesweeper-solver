@@ -1,6 +1,6 @@
 # **Python踩地雷工人**
 
-[en](./README.en.md) &emsp;
+[en](./README.md) &emsp;
 
 一個小小的project
 
