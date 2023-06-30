@@ -8,10 +8,10 @@ code**超級超級**凌亂
 
 ## **前置作業**
 
-**注意!** 要在windows系統上才能使用
+**Note注意!** 要在windows系統上才能使用
 
 1. 下載[Minesweeper X](https://minesweepergame.com/download/minesweeper-x.php)、[Arbiter](https://minesweepergame.com/download/arbiter.php)或任何minesweeper的clone(推薦Arbiter)，並開啟
-2. 在顯示設定中，將縮放調整到125%(之後會改良這個我保證)
+2. 在顯示設定中，將縮放調整到125%(之後會改良這個有時間的話)
 3. 在終端機執行
 ```
 $ git clone https://github.com/jasonjustin/python-minesweeper-solver.git
